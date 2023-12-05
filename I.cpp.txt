@@ -1,0 +1,97 @@
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+// 数据结构表示一个数据点
+struct Point {
+    double x;
+    double y;
+};
+
+// 计算两点之间的欧氏距离
+double distance(Point p1, Point p2) {
+    return sqrt(pow(p2.x - p1.x, 2) + pow(p2.y - p1.y, 2));
+}
+
+// 将数据点分配到最近的质心
+void assignPointsToCentroids(const std::vector<Point>& data, const std::vector<Point>& centroids, std::vector<int>& assignments) {
+    for (size_t i = 0; i < data.size(); i++) {
+        double minDistance = distance(data[i], centroids[0]);
+        int cluster = 0;
+        for (size_t j = 1; j < centroids.size(); j++) {
+            double dist = distance(data[i], centroids[j]);
+            if (dist < minDistance) {
+                minDistance = dist;
+                cluster = j;
+            }
+        }
+        assignments[i] = cluster;
+    }
+}
+
+// 计算基于分配的数据点的新质心
+std::vector<Point> calculateNewCentroids(const std::vector<Point>& data, const std::vector<int>& assignments, int k) {
+    std::vector<Point> centroids(k, {0.0, 0.0});
+    std::vector<int> counts(k, 0);
+    for (size_t i = 0; i < data.size(); i++) {
+        int cluster = assignments[i];
+        centroids[cluster].x += data[i].x;
+        centroids[cluster].y += data[i].y;
+        counts[cluster]++;
+    }
+    for (int i = 0; i < k; i++) {
+        if (counts[i] > 0) {
+            centroids[i].x /= counts[i];
+            centroids[i].y /= counts[i];
+        }
+    }
+    return centroids;
+}
+
+// 检查分配是否发生改变
+bool hasConverged(const std::vector<int>& oldAssignments, const std::vector<int>& newAssignments) {
+    return oldAssignments == newAssignments;
+}
+
+// k-均值算法实现
+void kMeans(const std::vector<Point>& data, int k) {
+    // 初始化随机质心,第一个质心随机选择，其余点与当前质心比较，距离最大则选择为第二、第三.......质心
+    std::vector<Point> centroids(k);
+    for (int i = 0; i < k; i++) {
+        int randNumber = rand() % data.size();
+        centroids[i] = data[randNumber];
+        std::cout<<randNumber<<std::endl;
+    }
+
+    std::vector<int> assignments(data.size());
+    std::vector<int> oldAssignments(data.size());
+
+    while (true) {
+        oldAssignments = assignments;
+
+        // 分配数据点到最近的质心
+        assignPointsToCentroids(data, centroids, assignments);
+
+        // 根据分配的数据点计算新的质心
+        centroids = calculateNewCentroids(data, assignments, k);
+
+        // 检查是否收敛
+        if (hasConverged(oldAssignments, assignments)) {
+            break;
+        }
+    }
+
+    // 打印最终的分配情况
+    for (size_t i = 0; i < data.size(); i++) {
+        std::cout << "数据点 (" << data[i].x << ", " << data[i].y << ") 分配到簇 " << assignments[i] << std::endl;
+    }
+}
+
+int main() {
+    std::vector<Point> data = {{1.0, 1.0}, {1.5, 2.0}, {3.0, 4.0}, {5.0, 7.0}, {3.5, 5.0}, {4.5, 5.0}, {3.5, 4.5}};
+    int k = 2;
+
+    kMeans(data, k);
+
+    return 0;
+}
